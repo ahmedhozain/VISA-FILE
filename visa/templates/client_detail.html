@@ -1,1254 +1,0 @@
-{% extends "base.html" %}
-{% block title %}ملف عميل{% endblock %}
-{% block content %}
-
-<!-- بيانات العميل الأساسية -->
-<div class="row g-4">
-  <div class="col-lg-9">
-    <div class="card shadow-lg mb-4">
-      <div class="card-body p-4">
-        <div class="d-flex justify-content-between align-items-start">
-          <div class="d-flex align-items-center">
-            <div class="me-4">
-              <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                <i class="fas fa-user fa-3x text-white"></i>
-              </div>
-            </div>
-            <div>
-              <h3 class="mb-2 text-gradient fw-bold">{{ client.name }}</h3>
-              <div class="d-flex align-items-center gap-4 text-muted">
-                <div class="d-flex align-items-center">
-                  <i class="fas fa-phone me-2 text-primary"></i>
-                  <span class="fw-semibold">{{ client.phone }}</span>
-                </div>
-                <div class="d-flex align-items-center">
-                  <i class="fas fa-passport me-2 text-success"></i>
-                  <span class="fw-semibold">{{ client.visa_type }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="d-flex flex-column align-items-end gap-3">
-                         <span class="badge bg-{{ 'success' if client.status == 'مكتمل' else 'warning' if client.status == 'جاري' else 'danger' if client.status == 'مرفوض' else 'secondary' if client.status == 'رفع مرة أخرى' else 'dark' }} fs-6 px-4 py-2">
-               <i class="fas fa-{{ 'check-circle' if client.status == 'مكتمل' else 'clock' if client.status == 'جاري' else 'times-circle' if client.status == 'مرفوض' else 'redo' if client.status == 'رفع مرة أخرى' else 'ban' }} me-2"></i>
-               {{ client.status }}
-               {% if client.status == 'رفع مرة أخرى' and client.rejection_reason %}
-                 <span class="badge bg-warning text-dark ms-2">
-                   <i class="fas fa-hashtag me-1"></i> {{ client.rejection_reason }}
-                 </span>
-               {% endif %}
-             </span>
-            {% if client.documents|selectattr('file_path')|list|length > 0 %}
-              <a href="{{ url_for('download_all_documents', client_id=client.id) }}" class="btn btn-success btn-lg">
-                <i class="fas fa-download me-2"></i> تنزيل جميع الملفات (ZIP)
-              </a>
-            {% endif %}
-          </div>
-        </div>
-        <hr>
-        <div class="row text-center">
-          <div class="col-md-4">
-            <div class="fw-bold">تكلفة المعاملة</div>
-            <div class="fs-5">{{ "{:,}".format(client.total_amount) }}</div>
-          </div>
-          <div class="col-md-4">
-            <div class="fw-bold">المدفوع</div>
-            <div class="fs-5 text-success">{{ "{:,}".format(client.paid_sum) }}</div>
-          </div>
-          <div class="col-md-4">
-            <div class="fw-bold">المتبقي</div>
-            <div class="fs-5 text-danger">{{ "{:,}".format(client.remaining) }}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- البوكس الجانبي - الأوراق الناقصة ومؤشر الدفع -->
-    <div class="row g-4 mb-4">
-      <div class="col-md-6">
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-warning text-dark fw-bold">
-            <i class="fas fa-exclamation-triangle me-2"></i> الأوراق الناقصة
-          </div>
-          <div class="card-body">
-            {% if missing_required_docs %}
-              <ul class="mb-0">
-                {% for n in missing_required_docs %}
-                  <li class="mb-2">
-                    <i class="fas fa-times-circle text-danger me-2"></i>
-                    {{ n }}
-                  </li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              <div class="text-success text-center">
-                <i class="fas fa-check-circle fa-2x mb-2"></i>
-                <p class="mb-0 fw-bold">✅ كل الأوراق الإجبارية مكتملة</p>
-              </div>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-      
-      <div class="col-md-6">
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-info text-white fw-bold">
-            <i class="fas fa-chart-pie me-2"></i> مؤشر الدفع
-          </div>
-          <div class="card-body">
-            {% if client.total_amount > 0 %}
-              {% set ratio = (client.paid_sum * 100) // client.total_amount %}
-            {% else %}
-              {% set ratio = 0 %}
-            {% endif %}
-            <div class="text-center mb-3">
-              <div class="display-6 fw-bold text-primary">{{ ratio }}%</div>
-              <div class="text-muted">نسبة الإنجاز</div>
-            </div>
-            <div class="progress mb-3" role="progressbar" style="height: 25px;">
-              <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                   data-width="{{ ratio }}">
-              </div>
-            </div>
-            <div class="row text-center">
-              <div class="col-6">
-                <div class="text-success">
-                  <div class="fw-bold">{{ "{:,}".format(client.paid_sum) }}</div>
-                  <small class="text-muted">مدفوع</small>
-                </div>
-              </div>
-              <div class="col-6">
-                <div class="text-danger">
-                  <div class="fw-bold">{{ "{:,}".format(client.remaining) }}</div>
-                  <small class="text-muted">متبقي</small>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- تغيير حالة العميل -->
-    <div class="card shadow-lg mb-4">
-      <div class="card-header bg-gradient-primary text-white fw-bold">
-        <i class="fas fa-edit me-2"></i> تغيير حالة العميل
-      </div>
-      <div class="card-body p-4">
-        <form method="POST" action="{{ url_for('update_client_status', client_id=client.id) }}">
-          <div class="row g-4 align-items-end">
-                         <div class="col-md-4">
-               <label class="form-label fw-bold text-muted">الحالة الحالية:</label>
-               <div class="mb-3">
-                 <span class="badge bg-{{ 'success' if client.status == 'مكتمل' else 'warning' if client.status == 'جاري' else 'danger' if client.status == 'مرفوض' else 'secondary' if client.status == 'رفع مرة أخرى' else 'dark' }} fs-6 px-4 py-2">
-                   <i class="fas fa-{{ 'check-circle' if client.status == 'مكتمل' else 'clock' if client.status == 'جاري' else 'times-circle' if client.status == 'مرفوض' else 'redo' if client.status == 'رفع مرة أخرى' else 'ban' }} me-2"></i>
-                   {{ client.status }}
-                   {% if client.status == 'رفع مرة أخرى' and client.rejection_reason %}
-                     <span class="badge bg-warning text-dark ms-2">
-                       <i class="fas fa-hashtag me-1"></i> {{ client.rejection_reason }}
-                     </span>
-                   {% endif %}
-                 </span>
-               </div>
-             </div>
-            <div class="col-md-4">
-              <label for="new_status" class="form-label fw-bold text-muted">الحالة الجديدة:</label>
-              <select name="new_status" id="new_status" class="form-select form-select-lg" required>
-                <option value="">اختر الحالة الجديدة</option>
-                <option value="جاري" {% if client.status == 'جاري' %}selected{% endif %}>جاري</option>
-                <option value="مكتمل" {% if client.status == 'مكتمل' %}selected{% endif %}>مكتمل</option>
-                <option value="مرفوض" {% if client.status == 'مرفوض' %}selected{% endif %}>مرفوض</option>
-                <option value="رفع مرة أخرى" {% if client.status == 'رفع مرة أخرى' %}selected{% endif %}>رفع مرة أخرى</option>
-                <option value="لغا المعاملة" {% if client.status == 'لغا المعاملة' %}selected{% endif %}>لغا المعاملة</option>
-              </select>
-            </div>
-            
-            <!-- حقل رقم المرة - يظهر عند اختيار "رفع مرة أخرى" -->
-            <div class="col-md-4" id="reason_field" style="display: none;">
-              <label for="rejection_reason" class="form-label fw-bold text-muted">
-                <i class="fas fa-redo me-2 text-warning"></i> الرفع للمرة رقم:
-              </label>
-              <div class="input-group input-group-lg">
-                <input type="number" name="rejection_reason" id="rejection_reason" 
-                       class="form-control form-control-lg border-2 border-warning" 
-                       min="2" max="10" placeholder="2" required>
-                <span class="input-group-text bg-warning text-dark fw-bold">مرة</span>
-              </div>
-              <div class="form-text text-muted mt-1">
-                <i class="fas fa-info-circle me-1"></i> أدخل رقم المرة (مثال: 2، 3، 4...)
-              </div>
-            </div>
-            <div class="col-md-4">
-              <button type="submit" class="btn btn-primary btn-lg w-100">
-                <i class="fas fa-save me-2"></i> تحديث الحالة
-              </button>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- تنبيهات الدفعات -->
-    {% if pay_alerts %}
-    <div class="alert alert-warning">
-      <ul class="mb-0">
-        {% for a in pay_alerts %}<li>{{ a }}</li>{% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-    
-    <!-- تنبيهات مواعيد الأوراق -->
-    {% if deadline_alerts %}
-    <div class="alert alert-danger border-0 mb-4">
-      <div class="d-flex align-items-center mb-3">
-        <i class="fas fa-exclamation-triangle me-3 fa-2x"></i>
-        <h6 class="mb-0 fw-bold">تنبيهات مواعيد الأوراق</h6>
-      </div>
-      <div class="row">
-        {% for alert in deadline_alerts %}
-        <div class="col-12 mb-2">
-          <div class="alert alert-{{ alert.type }} border-0 mb-2">
-            <div class="d-flex align-items-center justify-content-between">
-              <div>
-                <i class="fas fa-{{ 'exclamation-circle' if alert.type == 'danger' else 'clock' if alert.type == 'warning' else 'info-circle' }} me-2"></i>
-                {{ alert.message }}
-              </div>
-              <div class="d-flex gap-2">
-                {% if alert.document.deadline_start and alert.document.deadline_end %}
-                <span class="badge bg-secondary">
-                  <i class="fas fa-calendar me-1"></i>
-                  {{ alert.document.deadline_start.strftime('%Y-%m-%d') }} - {{ alert.document.deadline_end.strftime('%Y-%m-%d') }}
-                </span>
-                {% endif %}
-                <a href="#document-{{ alert.document.id }}" class="btn btn-sm btn-outline-primary">
-                  <i class="fas fa-eye me-1"></i>
-                  عرض الوثيقة
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
-        <!-- قسم الدفعات -->
-    <div class="card shadow-lg mb-4">
-      <div class="card-header bg-gradient-primary text-white fw-bold">
-        <i class="fas fa-money-bill-wave me-2"></i> إدارة الدفعات
-      </div>
-      <div class="card-body p-4">
-                 <!-- نموذج إضافة دفعة جديدة -->
-         <form method="POST" action="{{ url_for('add_payment', client_id=client.id) }}">
-           <div class="row g-4 mb-4">
-             <div class="col-12">
-               <h5 class="text-primary mb-4 fw-bold">
-                 <i class="fas fa-plus-circle me-2"></i> إضافة دفعة جديدة
-               </h5>
-             </div>
-           
-           <!-- نوع الدفعة -->
-           <div class="col-md-3">
-             <label class="form-label fw-bold fs-5 mb-2">
-               <i class="fas fa-tag me-2 text-primary"></i> نوع الدفعة
-             </label>
-             <select name="payment_type" id="payment_type" class="form-select form-select-lg border-2 border-primary" required>
-               <option value="دفعة">💳 دفعة</option>
-               <option value="رسوم سفارة">🏛️ رسوم سفارة</option>
-             </select>
-             <div class="form-text text-muted mt-1">
-               <i class="fas fa-info-circle me-1"></i> 
-               <span id="payment_type_help">الدفعة تخصم من المبلغ الكلي</span>
-             </div>
-           </div>
-           
-           <!-- المبلغ -->
-           <div class="col-md-3">
-             <label class="form-label fw-bold fs-5 mb-2">
-               <i class="fas fa-money-bill-wave me-2 text-success"></i> المبلغ
-             </label>
-             <div class="input-group input-group-lg border-2 border-success">
-               <input id="amount" name="amount" type="number" min="1" class="form-control form-control-lg" placeholder="أدخل المبلغ" required>
-               <span class="input-group-text bg-success text-white fw-bold">ج.م</span>
-             </div>
-             <div class="form-text text-muted mt-1">
-               <i class="fas fa-info-circle me-1"></i> المتبقي سيظهر تلقائيًا بالأسفل
-             </div>
-           </div>
-           
-           <!-- تاريخ الدفع -->
-           <div class="col-md-3">
-             <label class="form-label fw-bold fs-5 mb-2">
-               <i class="fas fa-calendar-check me-2 text-info"></i> تاريخ الدفع
-             </label>
-             <input name="paid_date" type="date" class="form-control form-control-lg border-2 border-info">
-             <div class="form-check mt-3">
-               <input class="form-check-input" type="checkbox" name="paid_now" id="paid_now" style="transform: scale(1.5);">
-               <label class="form-check-label text-success fw-bold fs-6 ms-2" for="paid_now">
-                 <i class="fas fa-check-circle me-1"></i> سجّلها مدفوعة الآن
-               </label>
-             </div>
-           </div>
-           
-           <!-- تاريخ الدفعة القادمة -->
-           <div class="col-md-3">
-             <label class="form-label fw-bold fs-5 mb-2">
-               <i class="fas fa-calendar-alt me-2 text-warning"></i> تاريخ الدفعة القادمة
-             </label>
-             <input name="next_due_date" type="date" class="form-control form-control-lg border-2 border-warning">
-             <div class="form-text text-muted mt-1">
-               <i class="fas fa-clock me-1"></i> اختياري - للدفعات المجدولة
-             </div>
-           </div>
-           
-           <!-- زر الإضافة -->
-           <div class="col-12 text-center mt-4">
-             <button type="submit" class="btn btn-primary btn-lg px-5 py-3 fw-bold fs-5">
-               <i class="fas fa-plus-circle me-3"></i> إضافة الدفعة
-             </button>
-           </div>
-         </div>
-         </form>
-
-                 <!-- عرض المتبقي المتوقع -->
-         <div class="alert alert-info border-0 mb-4">
-           <div class="d-flex align-items-center">
-             <i class="fas fa-calculator me-3 fa-2x"></i>
-             <div>
-               <strong>المتبقي المتوقع بعد هذه الدفعة:</strong>
-               <span class="fs-5 fw-bold text-primary ms-2" id="remaining_preview">{{ "{:,}".format(client.remaining) }}</span>
-               <span class="text-muted ms-2">ج.م</span>
-               <div class="text-muted small mt-1" id="payment_note">
-                 <i class="fas fa-info-circle me-1"></i> 
-                 <span id="note_text">اختر نوع الدفعة لرؤية التأثير على المتبقي</span>
-               </div>
-               <div class="text-muted small mt-1">
-                 <i class="fas fa-lightbulb me-1"></i> 
-                 <strong>💡 تلميح:</strong> 
-                 <span id="payment_tip">الدفعة تخصم من المبلغ الكلي، رسوم السفارة لا تخصم</span>
-               </div>
-             </div>
-           </div>
-         </div>
-
-        <hr class="my-4">
-
-        <!-- جدول الدفعات -->
-        <div class="table-responsive">
-          <table class="table table-hover align-middle">
-            <thead class="table-light">
-              <tr>
-                <th class="text-center" style="width: 60px;">#</th>
-                <th style="width: 120px;">النوع</th>
-                <th style="width: 120px;">المبلغ</th>
-                <th style="width: 120px;">تاريخ الدفع</th>
-                <th style="width: 120px;">تاريخ قادم</th>
-                <th style="width: 100px;">الحالة</th>
-                <th style="width: 150px;">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-            {% for p in payments %}
-              {% set status_text, status_color = p.status_badge() %}
-              <tr class="border-bottom">
-                <td class="text-center">
-                  <span class="badge bg-secondary rounded-pill fs-6">{{ p.number }}</span>
-                </td>
-                                 <td>
-                   {% if p.payment_type == "رسوم سفارة" %}
-                     <span class="badge bg-info fs-6 px-3 py-2">
-                       <i class="fas fa-building me-1"></i> رسوم سفارة
-                     </span>
-                   {% else %}
-                     <span class="badge bg-primary fs-6 px-3 py-2">
-                       <i class="fas fa-money-bill me-1"></i> دفعة
-                     </span>
-                   {% endif %}
-                 </td>
-                <td>
-                  <span class="fw-bold fs-6">{{ "{:,}".format(p.amount) }}</span>
-                  <span class="text-muted">ج.م</span>
-                </td>
-                <td>
-                  {% if p.paid_date %}
-                    <span class="text-success fw-semibold">{{ p.paid_date }}</span>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if p.next_due_date %}
-                    <span class="fw-semibold">{{ p.next_due_date }}</span>
-                  {% else %}
-                    <span class="text-muted">-</span>
-                  {% endif %}
-                </td>
-                <td>
-                  <span class="badge bg-{{ status_color }} fs-6 px-3 py-2">
-                    {% if status_text == "مدفوعة" %}
-                      <i class="fas fa-check-circle me-1"></i>
-                    {% elif status_text == "متأخرة" %}
-                      <i class="fas fa-exclamation-triangle me-1"></i>
-                    {% elif status_text == "اقترب الموعد" %}
-                      <i class="fas fa-clock me-1"></i>
-                    {% endif %}
-                    {{ status_text }}
-                  </span>
-                </td>
-                <td>
-                  <div class="d-flex gap-2">
-                    {% if not p.is_paid %}
-                      <form method="post" action="{{ url_for('mark_payment_paid', client_id=client.id, payment_id=p.id) }}" class="d-inline">
-                        <button class="btn btn-sm btn-success" title="تسجيل كمدفوعة">
-                          <i class="fas fa-check"></i>
-                        </button>
-                      </form>
-                    {% endif %}
-                    <form method="post" action="{{ url_for('delete_payment', client_id=client.id, payment_id=p.id) }}" 
-                          onsubmit="return confirm('هل أنت متأكد من حذف هذه الدفعة؟')" class="d-inline">
-                      <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف الدفعة">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            {% else %}
-              <tr>
-                <td colspan="7" class="text-center py-5">
-                  <div class="text-muted">
-                    <i class="fas fa-inbox fa-3x mb-3"></i>
-                    <p class="fs-5">لا توجد دفعات بعد</p>
-                    <p class="text-muted">ابدأ بإضافة أول دفعة باستخدام النموذج أعلاه</p>
-                  </div>
-                </td>
-              </tr>
-            {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-    </div>
-
-
-
-    <!-- نموذج إضافة وثائق جديدة -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header bg-primary text-white">
-        <h6 class="mb-0">
-          <i class="fas fa-plus-circle me-2"></i>
-          إضافة وثيقة جديدة
-        </h6>
-      </div>
-      <div class="card-body">
-        <form method="post" action="{{ url_for('add_custom_document', client_id=client.id) }}" class="row g-3 align-items-end">
-          <div class="col-md-6">
-            <label class="form-label fw-bold">اسم الوثيقة</label>
-            <input type="text" name="doc_name" class="form-control" placeholder="مثال: شهادة الميلاد، عقد الإيجار..." required>
-          </div>
-          <div class="col-md-3">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="is_required" id="is_required">
-              <label class="form-check-label fw-bold" for="is_required">
-                وثيقة إجبارية
-              </label>
-            </div>
-            <small class="text-muted">إذا لم يتم تحديدها، ستكون اختيارية</small>
-          </div>
-          <div class="col-md-3">
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="fas fa-plus me-2"></i>
-              إضافة الوثيقة
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- قسم المستندات -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-bold">الأوراق الإجبارية</span>
-        {% if client.documents|selectattr('file_path')|list|length > 0 %}
-          <a href="{{ url_for('download_all_documents', client_id=client.id) }}" class="btn btn-success btn-sm">
-            <i class="fas fa-download"></i> تنزيل جميع الملفات
-          </a>
-        {% endif %}
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table align-middle">
-            <thead>
-              <tr>
-                <th>الورقة</th>
-                <th>الحالة</th>
-                <th>المواعيد النهائية</th>
-                <th>الملف</th>
-                <th>إجراء</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for d in docs_required %}
-              <tr id="document-{{ d.id }}">
-                <td>
-                  {{ d.name }}
-                  {% if d.name not in ['جواز السفر', 'البطاقة الشخصية', 'خطاب الدعوة', 'القيد العائلي/الفردي', 'كشف الحساب البنكي', 'إثبات الوظيفة', 'شهادة الجيش', 'الفورم', 'الصورة الشخصية', 'سجل العمل لآخر 10 سنوات', 'شهادة التخرج', 'شهادة التحركات', 'عقود الملكية', 'إثبات قيد الأولاد'] %}
-                    <span class="badge bg-info ms-2">مخصصة</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if d.status == "مكتملة" %}
-                    <span class="badge bg-success">مكتملة</span>
-                  {% else %}
-                    <span class="badge bg-danger">ناقصة</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if d.deadline_start and d.deadline_end %}
-                    {% set deadline_status, deadline_color = d.get_deadline_status() %}
-                    <div class="mb-2">
-                      <span class="badge bg-{{ deadline_color }} mb-2">
-                        <i class="fas fa-{{ 'exclamation-circle' if deadline_color == 'danger' else 'clock' if deadline_color == 'warning' else 'info-circle' }} me-1"></i>
-                        {{ deadline_status }}
-                      </span>
-                    </div>
-                    <div class="small text-muted">
-                      <div><i class="fas fa-calendar me-1"></i> {{ d.deadline_start.strftime('%Y-%m-%d') }}</div>
-                      <div><i class="fas fa-calendar-times me-1"></i> {{ d.deadline_end.strftime('%Y-%m-%d') }}</div>
-                    </div>
-                    {% if d.deadline_start and d.deadline_end %}
-                    <div class="progress mt-2" style="height: 8px;">
-                      <div class="progress-bar bg-{{ deadline_color }}" style="width: {{ d.get_deadline_progress() }}%"></div>
-                    </div>
-                    {% endif %}
-                  {% else %}
-                    <span class="text-muted">بدون موعد نهائي</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% set has_db_file = d.file_bytes is not none and d.file_size %}
-                  {% set show_ext_name = d.file_name if d.file_name else d.file_path %}
-                  {% if has_db_file or d.file_path %}
-                    {% set basis = show_ext_name or '' %}
-                    {% set file_extension = basis.split('.')[-1]|lower if '.' in basis else '' %}
-                    {% if file_extension == 'pdf' %}
-                      <div class="d-flex gap-1">
-                        {% if has_db_file %}
-                          <a href="{{ url_for('view_document_by_id', doc_id=d.id) }}" target="_blank" class="btn btn-sm btn-danger">
-                            <i class="fas fa-eye me-1"></i> عرض
-                          </a>
-                          <a href="{{ url_for('download_document_by_id', doc_id=d.id) }}" class="btn btn-sm btn-outline-danger">
-                            <i class="fas fa-download me-1"></i> تحميل
-                          </a>
-                        {% else %}
-                          <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'pdf')" class="btn btn-sm btn-danger">
-                          <i class="fas fa-eye me-1"></i> عرض
-                          </button>
-                          <a href="{{ url_for('download_pdf', filename=d.file_path) }}" class="btn btn-sm btn-outline-danger">
-                            <i class="fas fa-download me-1"></i> تحميل
-                          </a>
-                        {% endif %}
-                      </div>
-                    {% elif file_extension in ['jpg', 'jpeg', 'png', 'gif'] %}
-                      <div class="d-flex gap-1">
-                        {% if has_db_file %}
-                          <a href="{{ url_for('view_document_by_id', doc_id=d.id) }}" target="_blank" class="btn btn-sm btn-info">
-                            <i class="fas fa-eye me-1"></i> عرض
-                          </a>
-                          <a href="{{ url_for('download_document_by_id', doc_id=d.id) }}" class="btn btn-sm btn-outline-info">
-                            <i class="fas fa-download me-1"></i> تحميل
-                          </a>
-                        {% else %}
-                          <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'image')" class="btn btn-sm btn-info">
-                            <i class="fas fa-eye me-1"></i> عرض
-                          </button>
-                          <a href="{{ url_for('uploaded_file', filename=d.file_path) }}" class="btn btn-sm btn-outline-info">
-                            <i class="fas fa-download me-1"></i> تحميل
-                          </a>
-                        {% endif %}
-                      </div>
-                    {% elif file_extension in ['doc', 'docx'] %}
-                      <div class="d-flex gap-1">
-                        {% if has_db_file %}
-                          <a href="{{ url_for('view_document_by_id', doc_id=d.id) }}" target="_blank" class="btn btn-sm btn-primary">
-                            <i class="fas fa-eye me-1"></i> عرض
-                          </a>
-                          <a href="{{ url_for('download_document_by_id', doc_id=d.id) }}" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-download me-1"></i> تحميل
-                          </a>
-                        {% else %}
-                          <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'document')" class="btn btn-sm btn-primary">
-                            <i class="fas fa-eye me-1"></i> عرض
-                          </button>
-                          <a href="{{ url_for('uploaded_file', filename=d.file_path) }}" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-download me-1"></i> تحميل
-                          </a>
-                        {% endif %}
-                      </div>
-                    {% elif file_extension in ['xls', 'xlsx'] %}
-                      <div class="d-flex gap-1">
-                        {% if has_db_file %}
-                          <a href="{{ url_for('view_document_by_id', doc_id=d.id) }}" target="_blank" class="btn btn-sm btn-success">
-                            <i class="fas fa-eye me-1"></i> عرض
-                          </a>
-                          <a href="{{ url_for('download_document_by_id', doc_id=d.id) }}" class="btn btn-sm btn-outline-success">
-                            <i class="fas fa-download me-1"></i> تحميل
-                          </a>
-                        {% else %}
-                          <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'document')" class="btn btn-sm btn-success">
-                            <i class="fas fa-eye me-1"></i> عرض
-                          </button>
-                          <a href="{{ url_for('uploaded_file', filename=d.file_path) }}" class="btn btn-sm btn-outline-success">
-                            <i class="fas fa-download me-1"></i> تحميل
-                          </a>
-                        {% endif %}
-                      </div>
-                    {% else %}
-                      {% if has_db_file %}
-                        <a href="{{ url_for('download_document_by_id', doc_id=d.id) }}" class="btn btn-sm btn-secondary">
-                          <i class="fas fa-file me-1"></i> تحميل الملف
-                        </a>
-                      {% else %}
-                        <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'other')" class="btn btn-sm btn-secondary">
-                          <i class="fas fa-file me-1"></i> عرض الملف
-                        </button>
-                      {% endif %}
-                    {% endif %}
-                  {% else %}-{% endif %}
-                </td>
-                <td>
-                  <div class="d-flex flex-column gap-2">
-                    <!-- أزرار إدارة المواعيد النهائية -->
-                    <div class="d-flex gap-1 mb-2">
-                      {% if d.deadline_start and d.deadline_end %}
-                        <button class="btn btn-sm btn-outline-warning" onclick="editDeadline({{ d.id }}, '{{ d.deadline_start.strftime('%Y-%m-%d') }}', '{{ d.deadline_end.strftime('%Y-%m-%d') }}', {{ d.deadline_warning_days }})">
-                          <i class="fas fa-edit me-1"></i> تعديل الموعد
-                        </button>
-                        <form method="post" action="{{ url_for('remove_document_deadline', client_id=client.id, doc_id=d.id) }}" 
-                              onsubmit="return confirm('هل أنت متأكد من إزالة الموعد النهائي؟')" class="d-inline">
-                          <button type="submit" class="btn btn-sm btn-outline-secondary">
-                            <i class="fas fa-times me-1"></i> إزالة الموعد
-                          </button>
-                        </form>
-                      {% else %}
-                        <button class="btn btn-sm btn-outline-success" onclick="setDeadline({{ d.id }})">
-                          <i class="fas fa-calendar-plus me-1"></i> تعيين موعد
-                        </button>
-                      {% endif %}
-                    </div>
-                    
-                    <!-- أزرار رفع الملفات -->
-                    <div class="d-flex gap-2">
-                      <form method="post" action="{{ url_for('upload_document', client_id=client.id, doc_id=d.id) }}" enctype="multipart/form-data" class="d-flex gap-2">
-                        <input type="file" name="file" class="form-control form-control-sm" required>
-                        <button class="btn btn-sm btn-primary">رفع/استبدال</button>
-                      </form>
-                      {% if d.file_bytes or d.file_path %}
-                        {% if d.file_bytes %}
-                        <a href="{{ url_for('download_document_by_id', doc_id=d.id) }}" class="btn btn-sm btn-outline-success">تحميل</a>
-                        {% endif %}
-                        <form method="post" action="{{ url_for('delete_document', client_id=client.id, doc_id=d.id) }}" 
-                              onsubmit="return confirm('هل أنت متأكد من حذف هذا الملف؟')" class="d-inline">
-                          <button type="submit" class="btn btn-sm btn-danger">حذف الملف</button>
-                        </form>
-                      {% endif %}
-                    </div>
-                    
-                    <!-- زر حذف الوثيقة المخصصة -->
-                    {% if d.name not in ['جواز السفر', 'البطاقة الشخصية', 'خطاب الدعوة', 'القيد العائلي/الفردي', 'كشف الحساب البنكي', 'إثبات الوظيفة', 'شهادة الجيش', 'الفورم', 'الصورة الشخصية', 'سجل العمل لآخر 10 سنوات', 'شهادة التخرج', 'شهادة التحركات', 'عقود الملكية', 'إثبات قيد الأولاد'] %}
-                      <form method="post" action="{{ url_for('delete_custom_document', client_id=client.id, doc_id=d.id) }}" 
-                            onsubmit="return confirm('هل أنت متأكد من حذف هذه الوثيقة؟')" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                          <i class="fas fa-trash me-1"></i> حذف الوثيقة
-                        </button>
-                      </form>
-                    {% endif %}
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-bold">الأوراق الاختيارية</span>
-        {% if client.documents|selectattr('file_path')|list|length > 0 %}
-          <a href="{{ url_for('download_all_documents', client_id=client.id) }}" class="btn btn-success btn-sm">
-            <i class="fas fa-download"></i> تنزيل جميع الملفات
-          </a>
-        {% endif %}
-      </div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table align-middle">
-            <thead>
-              <tr>
-                <th>الورقة</th>
-                <th>الحالة</th>
-                <th>المواعيد النهائية</th>
-                <th>الملف</th>
-                <th>إجراء</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for d in docs_optional %}
-              <tr id="document-{{ d.id }}">
-                <td>
-                  {{ d.name }}
-                  {% if d.name not in ['جواز السفر', 'البطاقة الشخصية', 'خطاب الدعوة', 'القيد العائلي/الفردي', 'كشف الحساب البنكي', 'إثبات الوظيفة', 'شهادة الجيش', 'الفورم', 'الصورة الشخصية', 'سجل العمل لآخر 10 سنوات', 'شهادة التخرج', 'شهادة التحركات', 'عقود الملكية', 'إثبات قيد الأولاد'] %}
-                    <span class="badge bg-info ms-2">مخصصة</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if d.status == "مكتملة" %}
-                    <span class="badge bg-success">مكتملة</span>
-                  {% else %}
-                    <span class="badge bg-secondary">اختياري/غير مرفوع</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if d.deadline_start and d.deadline_end %}
-                    {% set deadline_status, deadline_color = d.get_deadline_status() %}
-                    <div class="mb-2">
-                      <span class="badge bg-{{ deadline_color }} mb-2">
-                        <i class="fas fa-{{ 'exclamation-circle' if deadline_color == 'danger' else 'clock' if deadline_color == 'warning' else 'info-circle' }} me-1"></i>
-                        {{ deadline_status }}
-                      </span>
-                    </div>
-                    <div class="small text-muted">
-                      <div><i class="fas fa-calendar me-1"></i> {{ d.deadline_start.strftime('%Y-%m-%d') }}</div>
-                      <div><i class="fas fa-calendar-times me-1"></i> {{ d.deadline_end.strftime('%Y-%m-%d') }}</div>
-                    </div>
-                    {% if d.deadline_start and d.deadline_end %}
-                    <div class="progress mt-2" style="height: 8px;">
-                      <div class="progress-bar bg-{{ deadline_color }}" style="width: {{ d.get_deadline_progress() }}%"></div>
-                    </div>
-                    {% endif %}
-                  {% else %}
-                    <span class="text-muted">بدون موعد نهائي</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if d.file_path %}
-                    {% set file_extension = d.file_path.split('.')[-1]|lower if '.' in d.file_path else '' %}
-                    {% if file_extension == 'pdf' %}
-                      <div class="d-flex gap-1">
-                        <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'pdf')" class="btn btn-sm btn-danger">
-                          <i class="fas fa-eye me-1"></i> عرض
-                        </button>
-                        <a href="{{ url_for('download_pdf', filename=d.file_path) }}" class="btn btn-sm btn-outline-danger">
-                          <i class="fas fa-download me-1"></i> تحميل
-                        </a>
-                      </div>
-                    {% elif file_extension in ['jpg', 'jpeg', 'png', 'gif'] %}
-                      <div class="d-flex gap-1">
-                        <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'image')" class="btn btn-sm btn-info">
-                          <i class="fas fa-eye me-1"></i> عرض
-                        </button>
-                        <a href="{{ url_for('uploaded_file', filename=d.file_path) }}" class="btn btn-sm btn-outline-info">
-                          <i class="fas fa-download me-1"></i> تحميل
-                        </a>
-                      </div>
-                    {% elif file_extension in ['doc', 'docx'] %}
-                      <div class="d-flex gap-1">
-                        <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'document')" class="btn btn-sm btn-primary">
-                          <i class="fas fa-eye me-1"></i> عرض
-                        </button>
-                        <a href="{{ url_for('uploaded_file', filename=d.file_path) }}" class="btn btn-sm btn-outline-primary">
-                          <i class="fas fa-download me-1"></i> تحميل
-                        </a>
-                      </div>
-                    {% elif file_extension in ['xls', 'xlsx'] %}
-                      <div class="d-flex gap-1">
-                        <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'document')" class="btn btn-sm btn-success">
-                          <i class="fas fa-eye me-1"></i> عرض
-                        </button>
-                        <a href="{{ url_for('uploaded_file', filename=d.file_path) }}" class="btn btn-sm btn-outline-success">
-                          <i class="fas fa-download me-1"></i> تحميل
-                        </a>
-                      </div>
-                    {% else %}
-                      <button onclick="viewFileInModal('{{ d.file_path }}', '{{ d.name }}', 'other')" class="btn btn-sm btn-secondary">
-                        <i class="fas fa-file me-1"></i> عرض الملف
-                      </button>
-                    {% endif %}
-                  {% else %}-{% endif %}
-                </td>
-                <td>
-                  <div class="d-flex gap-2">
-                    <form method="post" action="{{ url_for('upload_document', client_id=client.id, doc_id=d.id) }}" enctype="multipart/form-data" class="d-flex gap-2">
-                      <input type="file" name="file" class="form-control form-control-sm" required>
-                      <button class="btn btn-sm btn-primary">رفع/استبدال</button>
-                    </form>
-                    {% if d.file_path %}
-                      <form method="post" action="{{ url_for('delete_document', client_id=client.id, doc_id=d.id) }}" 
-                            onsubmit="return confirm('هل أنت متأكد من حذف هذا الملف؟')" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-danger">حذف الملف</button>
-                      </form>
-                    {% endif %}
-                    
-                    <!-- زر حذف الوثيقة المخصصة -->
-                    {% if d.name not in ['جواز السفر', 'البطاقة الشخصية', 'خطاب الدعوة', 'القيد العائلي/الفردي', 'كشف الحساب البنكي', 'إثبات الوظيفة', 'شهادة الجيش', 'الفورم', 'الصورة الشخصية', 'سجل العمل لآخر 10 سنوات', 'شهادة التخرج', 'شهادة التحركات', 'عقود الملكية', 'إثبات قيد الأولاد'] %}
-                      <form method="post" action="{{ url_for('delete_custom_document', client_id=client.id, doc_id=d.id) }}" 
-                            onsubmit="return confirm('هل أنت متأكد من حذف هذه الوثيقة؟')" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                          <i class="fas fa-trash me-1"></i> حذف الوثيقة
-                        </button>
-                      </form>
-                    {% endif %}
-                  </div>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- المتابعات -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-header fw-bold">المتابعات</div>
-      <div class="card-body">
-        <form method="post" action="{{ url_for('add_followup', client_id=client.id) }}" class="row g-3 align-items-end">
-          <div class="col-md-3">
-            <label class="form-label">تاريخ المتابعة</label>
-            <input name="follow_date" type="date" class="form-control" required>
-          </div>
-          <div class="col-md-7">
-            <label class="form-label">الملاحظات</label>
-            <textarea name="notes" class="form-control" rows="2" required></textarea>
-          </div>
-          <div class="col-md-2">
-            <button class="btn btn-primary w-100">حفظ</button>
-          </div>
-        </form>
-        <hr>
-        <div class="table-responsive">
-          <table class="table align-middle">
-            <thead>
-              <tr>
-                <th>التاريخ</th>
-                <th>الملاحظات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for f in follows %}
-              <tr>
-                <td>{{ f.date }}</td>
-                <td>{{ f.notes }}</td>
-              </tr>
-              {% else %}
-              <tr><td colspan="2" class="text-center text-muted">لا توجد متابعات بعد.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<script>
-  // حساب المتبقي المتوقع بعد إدخال مبلغ الدفعة
-  const amountInput = document.getElementById('amount');
-  const paymentTypeSelect = document.getElementById('payment_type');
-  const remainingPreview = document.getElementById('remaining_preview');
-  const noteText = document.getElementById('note_text');
-  
-  if (amountInput && remainingPreview) {
-    const baseRemaining = parseInt('{{ client.remaining }}') || 0;
-    const fmt = (n) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    const paymentTypeHelp = document.getElementById('payment_type_help');
-    
-    function calculateRemaining() {
-      const amount = parseInt(amountInput.value || '0');
-      const paymentType = paymentTypeSelect ? paymentTypeSelect.value : 'دفعة';
-      
-      let rem = baseRemaining;
-      let note = '';
-      let helpText = '';
-      
-      if (paymentType === 'دفعة') {
-        // الدفعة تخصم من المبلغ الكلي
-        rem = Math.max(baseRemaining - amount, 0);
-        note = 'سيتم خصم المبلغ من المتبقي';
-        helpText = 'الدفعة تخصم من المبلغ الكلي';
-      } else if (paymentType === 'رسوم سفارة') {
-        // رسوم السفارة لا تخصم من المبلغ الكلي
-        rem = baseRemaining;
-        note = 'رسوم السفارة لا تخصم من المبلغ الكلي';
-        helpText = 'رسوم السفارة لا تخصم من المبلغ الكلي';
-      }
-      
-      remainingPreview.textContent = fmt(rem);
-      
-      // تحديث النص التوضيحي
-      if (noteText) {
-        noteText.textContent = note;
-      }
-      
-      // تحديث النص التوضيحي لنوع الدفعة
-      if (paymentTypeHelp) {
-        paymentTypeHelp.textContent = helpText;
-      }
-      
-      // تحديث النص التوضيحي للتلميح
-      const paymentTip = document.getElementById('payment_tip');
-      if (paymentTip) {
-        if (paymentType === 'دفعة') {
-          paymentTip.textContent = 'الدفعة تخصم من المبلغ الكلي';
-        } else if (paymentType === 'رسوم سفارة') {
-          paymentTip.textContent = 'رسوم السفارة لا تخصم من المبلغ الكلي';
-        }
-      }
-      
-      // تغيير لون المتبقي حسب القيمة
-      if (rem === 0) {
-        remainingPreview.className = 'fs-5 fw-bold text-success ms-2';
-      } else if (rem < baseRemaining * 0.3) {
-        remainingPreview.className = 'fs-5 fw-bold text-warning ms-2';
-      } else {
-        remainingPreview.className = 'fs-5 fw-bold text-primary ms-2';
-      }
-    }
-    
-    amountInput.addEventListener('input', calculateRemaining);
-    
-    if (paymentTypeSelect) {
-      paymentTypeSelect.addEventListener('change', calculateRemaining);
-    }
-    
-    // تشغيل الحساب عند تحميل الصفحة
-    calculateRemaining();
-  }
-
-  // تطبيق عرض شريط التقدم
-  document.addEventListener('DOMContentLoaded', function() {
-    // تحديث شريط التقدم في مؤشر الدفع
-    const progressBar = document.querySelector('.progress-bar');
-    if (progressBar) {
-      const ratio = progressBar.getAttribute('data-width');
-      progressBar.style.width = ratio + '%';
-    }
-    
-    // إضافة تأثيرات بصرية للجدول
-    const tableRows = document.querySelectorAll('tbody tr');
-    tableRows.forEach((row, index) => {
-      row.style.transition = 'all 0.3s ease';
-      row.addEventListener('mouseenter', () => {
-        row.style.transform = 'translateX(5px)';
-        row.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-      });
-      row.addEventListener('mouseleave', () => {
-        row.style.transform = 'translateX(0)';
-        row.style.boxShadow = 'none';
-      });
-    });
-    
-    // إظهار/إخفاء حقل السبب حسب الحالة المختارة
-    const statusSelect = document.getElementById('new_status');
-    const reasonField = document.getElementById('reason_field');
-    const reasonTextarea = document.getElementById('rejection_reason');
-    
-    if (statusSelect && reasonField) {
-      statusSelect.addEventListener('change', function() {
-        if (this.value === 'رفع مرة أخرى') {
-          reasonField.style.display = 'block';
-          reasonTextarea.setAttribute('required', 'required');
-          reasonTextarea.focus();
-        } else {
-          reasonField.style.display = 'none';
-          reasonTextarea.removeAttribute('required');
-          reasonTextarea.value = '';
-        }
-      });
-      
-      // التحقق من الحالة الحالية عند تحميل الصفحة
-      if (statusSelect.value === 'رفع مرة أخرى') {
-        reasonField.style.display = 'block';
-        reasonTextarea.setAttribute('required', 'required');
-      }
-    }
-  });
-</script>
-
-<!-- Modal لعرض الملفات في نفس الصفحة -->
-<div class="modal fade" id="fileViewerModal" tabindex="-1" aria-labelledby="fileViewerModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="fileViewerModalLabel">
-          <i class="fas fa-file me-2"></i>
-          <span id="modalFileName">عرض الملف</span>
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-0">
-        <div id="fileViewerContent" class="w-100">
-          <!-- سيتم تحميل محتوى الملف هنا -->
-        </div>
-      </div>
-      <div class="modal-footer">
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="fas fa-times me-2"></i>
-            إغلاق
-          </button>
-          <a href="#" id="downloadFileBtn" class="btn btn-success" download>
-            <i class="fas fa-download me-2"></i>
-            تحميل
-          </a>
-          <a href="#" id="openInNewTabBtn" class="btn btn-info" target="_blank">
-            <i class="fas fa-external-link-alt me-2"></i>
-            فتح في نافذة جديدة
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal لإدارة المواعيد النهائية -->
-<div class="modal fade" id="deadlineModal" tabindex="-1" aria-labelledby="deadlineModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="deadlineModalLabel">
-          <i class="fas fa-calendar me-2"></i>
-          إدارة المواعيد النهائية
-        </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <form id="deadlineForm" method="post">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label for="deadline_start" class="form-label fw-bold">
-                <i class="fas fa-calendar-plus me-2 text-success"></i>
-                بداية المدة
-              </label>
-              <input type="date" class="form-control" id="deadline_start" name="deadline_start" required>
-            </div>
-            <div class="col-md-6">
-              <label for="deadline_end" class="form-label fw-bold">
-                <i class="fas fa-calendar-times me-2 text-danger"></i>
-                نهاية المدة
-              </label>
-              <input type="date" class="form-control" id="deadline_end" name="deadline_end" required>
-            </div>
-            <div class="col-md-6">
-              <label for="warning_days" class="form-label fw-bold">
-                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
-                أيام التنبيه المبكر
-              </label>
-              <input type="number" class="form-control" id="warning_days" name="warning_days" 
-                     min="1" max="30" value="7" required>
-              <div class="form-text">عدد الأيام قبل انتهاء المدة لإظهار التنبيه</div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold">
-                <i class="fas fa-info-circle me-2 text-info"></i>
-                معلومات المدة
-              </label>
-              <div class="alert alert-info border-0">
-                <div id="deadlineInfo">
-                  <i class="fas fa-lightbulb me-1"></i>
-                  اختر بداية ونهاية المدة لرؤية المعلومات
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          <i class="fas fa-times me-2"></i>
-          إلغاء
-        </button>
-        <button type="submit" form="deadlineForm" class="btn btn-primary">
-          <i class="fas fa-save me-2"></i>
-          حفظ الموعد
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- JavaScript لعرض الملفات في Modal -->
-<script>
-function viewFileInModal(filePath, fileName, fileType) {
-  const modal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
-  const modalTitle = document.getElementById('modalFileName');
-  const modalContent = document.getElementById('fileViewerContent');
-  const downloadBtn = document.getElementById('downloadFileBtn');
-  const openInNewTabBtn = document.getElementById('openInNewTabBtn');
-  
-  // تحديث عنوان Modal
-  modalTitle.textContent = fileName;
-  
-  // تحديث روابط الأزرار
-  downloadBtn.href = `/uploads/${filePath}`;
-  openInNewTabBtn.href = `/uploads/${filePath}`;
-  
-  // مسح المحتوى السابق
-  modalContent.innerHTML = '';
-  
-  // عرض الملف حسب نوعه
-  if (fileType === 'pdf') {
-    // عرض PDF
-    const iframe = document.createElement('iframe');
-    iframe.src = `/view_pdf/${filePath}`;
-    iframe.style.width = '100%';
-    iframe.style.height = '70vh';
-    iframe.style.border = 'none';
-    iframe.title = 'عرض PDF';
-    modalContent.appendChild(iframe);
-  } else if (fileType === 'image') {
-    // عرض الصورة
-    const img = document.createElement('img');
-    img.src = `/view_image/${filePath}`;
-    img.style.width = '100%';
-    img.style.height = 'auto';
-    img.style.maxHeight = '70vh';
-    img.style.objectFit = 'contain';
-    img.alt = fileName;
-    modalContent.appendChild(img);
-  } else if (fileType === 'document') {
-    // عرض ملفات Office
-    const iframe = document.createElement('iframe');
-    iframe.src = `/view_document/${filePath}`;
-    iframe.style.width = '100%';
-    iframe.style.height = '70vh';
-    iframe.style.border = 'none';
-    iframe.title = 'عرض الملف';
-    modalContent.appendChild(iframe);
-  } else {
-    // للملفات الأخرى، عرض رابط التحميل
-    const downloadDiv = document.createElement('div');
-    downloadDiv.className = 'text-center p-5';
-    downloadDiv.innerHTML = `
-      <i class="fas fa-file fa-4x text-muted mb-3"></i>
-      <h5 class="text-muted">لا يمكن عرض هذا النوع من الملفات</h5>
-      <p class="text-muted">اضغط زر التحميل لتنزيل الملف</p>
-    `;
-    modalContent.appendChild(downloadDiv);
-  }
-  
-  // عرض Modal
-  modal.show();
-}
-
-// دالة لتحديد نوع الملف
-function getFileType(filePath) {
-  const extension = filePath.split('.').pop().toLowerCase();
-  if (['pdf'].includes(extension)) return 'pdf';
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension)) return 'image';
-  if (['doc', 'docx', 'xls', 'xlsx'].includes(extension)) return 'document';
-  return 'other';
-}
-
-// دوال إدارة المواعيد النهائية
-let currentDocumentId = null;
-
-function setDeadline(docId) {
-  currentDocumentId = docId;
-  const modal = new bootstrap.Modal(document.getElementById('deadlineModal'));
-  const form = document.getElementById('deadlineForm');
-  const startInput = document.getElementById('deadline_start');
-  const endInput = document.getElementById('deadline_end');
-  const warningInput = document.getElementById('warning_days');
-  
-  // مسح النموذج
-  form.reset();
-  
-  // تعيين التاريخ الحالي كبداية افتراضية
-  const today = new Date().toISOString().split('T')[0];
-  startInput.value = today;
-  
-  // تحديث action للنموذج
-  form.action = `/client/{{ client.id }}/set_document_deadline/${docId}`;
-  
-  // عرض Modal
-  modal.show();
-  
-  // تحديث معلومات المدة
-  updateDeadlineInfo();
-}
-
-function editDeadline(docId, startDate, endDate, warningDays) {
-  currentDocumentId = docId;
-  const modal = new bootstrap.Modal(document.getElementById('deadlineModal'));
-  const form = document.getElementById('deadlineForm');
-  const startInput = document.getElementById('deadline_start');
-  const endInput = document.getElementById('deadline_end');
-  const warningInput = document.getElementById('warning_days');
-  
-  // تعيين القيم الحالية
-  startInput.value = startDate;
-  endInput.value = endDate;
-  warningInput.value = warningDays;
-  
-  // تحديث action للنموذج
-  form.action = `/client/{{ client.id }}/set_document_deadline/${docId}`;
-  
-  // عرض Modal
-  modal.show();
-  
-  // تحديث معلومات المدة
-  updateDeadlineInfo();
-}
-
-function updateDeadlineInfo() {
-  const startInput = document.getElementById('deadline_start');
-  const endInput = document.getElementById('deadline_end');
-  const warningInput = document.getElementById('warning_days');
-  const infoDiv = document.getElementById('deadlineInfo');
-  
-  if (startInput.value && endInput.value) {
-    const start = new Date(startInput.value);
-    const end = new Date(endInput.value);
-    const warning = parseInt(warningInput.value) || 7;
-    
-    if (start >= end) {
-      infoDiv.innerHTML = '<i class="fas fa-exclamation-triangle me-1 text-warning"></i> تاريخ البداية يجب أن يكون قبل تاريخ النهاية';
-      return;
-    }
-    
-    const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    const warningDate = new Date(end);
-    warningDate.setDate(warningDate.getDate() - warning);
-    
-    infoDiv.innerHTML = `
-      <div><i class="fas fa-calendar me-1"></i> <strong>المدة الكلية:</strong> ${totalDays} يوم</div>
-      <div><i class="fas fa-exclamation-triangle me-1"></i> <strong>التنبيه المبكر:</strong> ${warningDate.toLocaleDateString('ar-EG')}</div>
-      <div><i class="fas fa-clock me-1"></i> <strong>نهاية المدة:</strong> ${end.toLocaleDateString('ar-EG')}</div>
-    `;
-  } else {
-    infoDiv.innerHTML = '<i class="fas fa-lightbulb me-1"></i> اختر بداية ونهاية المدة لرؤية المعلومات';
-  }
-}
-
-// إضافة مستمعي الأحداث
-document.addEventListener('DOMContentLoaded', function() {
-  const startInput = document.getElementById('deadline_start');
-  const endInput = document.getElementById('deadline_end');
-  const warningInput = document.getElementById('warning_days');
-  
-  if (startInput && endInput && warningInput) {
-    startInput.addEventListener('change', updateDeadlineInfo);
-    endInput.addEventListener('change', updateDeadlineInfo);
-    warningInput.addEventListener('input', updateDeadlineInfo);
-  }
-});
-</script>
-
-{% endblock %}
-
