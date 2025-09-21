@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}إحصائيات حالات العملاء{% endblock %}
+{% block content %}
+
+<!-- العنوان الرئيسي -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex align-items-center">
+    <div class="me-3">
+      <i class="fas fa-chart-bar fa-3x text-primary"></i>
+    </div>
+    <div>
+      <h2 class="mb-0 text-gradient">إحصائيات حالات العملاء</h2>
+      <p class="text-muted mb-0">عرض وتصفية العملاء حسب الحالة</p>
+    </div>
+  </div>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary btn-lg">
+    <i class="fas fa-arrow-right me-2"></i> العودة للوحة التحكم
+  </a>
+</div>
+
+<!-- ملاحظة -->
+<div class="alert alert-info mb-4">
+  <i class="fas fa-info-circle"></i>
+  <strong>ملاحظة:</strong> يمكنك تغيير حالة العميل مباشرة من صفحة تفاصيل العميل. اضغط على "عرض التفاصيل" في أي جدول أدناه.
+</div>
+
+<!-- تصفية العملاء حسب الحالة -->
+<div class="card shadow-lg mb-4">
+  <div class="card-header bg-gradient-info text-white">
+    <h6 class="mb-0"><i class="fas fa-filter me-2"></i> تصفية العملاء حسب الحالة</h6>
+  </div>
+  <div class="card-body p-4">
+    <div class="row g-3">
+      <div class="col-md-4 col-lg-2">
+        <a href="{{ url_for('manage_status', status='مكتمل') }}" class="btn btn-success w-100 btn-lg">
+          <i class="fas fa-check-circle me-2"></i> مكتمل
+        </a>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <a href="{{ url_for('manage_status', status='جاري') }}" class="btn btn-warning w-100 btn-lg">
+          <i class="fas fa-clock me-2"></i> جاري
+        </a>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <a href="{{ url_for('manage_status', status='مرفوض') }}" class="btn btn-danger w-100 btn-lg">
+          <i class="fas fa-times-circle me-2"></i> مرفوض
+        </a>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <a href="{{ url_for('manage_status', status='رفع مرة أخرى') }}" class="btn btn-secondary w-100 btn-lg">
+          <i class="fas fa-redo me-2"></i> رفع مرة أخرى
+        </a>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <a href="{{ url_for('manage_status', status='لغا المعاملة') }}" class="btn btn-dark w-100 btn-lg">
+          <i class="fas fa-ban me-2"></i> لغا المعاملة
+        </a>
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <a href="{{ url_for('manage_status') }}" class="btn btn-outline-secondary w-100 btn-lg">
+          <i class="fas fa-times me-2"></i> إلغاء التصفية
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- عرض العملاء -->
+{% if status_filter %}
+<div class="card shadow-lg">
+  <div class="card-header bg-gradient-success text-white">
+    <h6 class="mb-0 d-flex align-items-center justify-content-between">
+      <div>
+        <i class="fas fa-users me-2"></i> 
+        العملاء بحالة "{{ status_filter }}"
+      </div>
+      <span class="badge bg-light text-dark fs-6 px-3 py-2">{{ clients|length }}</span>
+    </h6>
+  </div>
+  <div class="card-body">
+    {% if clients %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>اسم العميل</th>
+              <th>رقم الهاتف</th>
+              <th>نوع التأشيرة</th>
+              <th>المبلغ الإجمالي</th>
+              <th>الحالة</th>
+              <th>تاريخ الإنشاء</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for client in clients %}
+            <tr>
+              <td>{{ client.name }}</td>
+              <td>{{ client.phone }}</td>
+              <td>{{ client.visa_type }}</td>
+              <td>{{ "{:,}".format(client.total_amount) if client.total_amount else '-' }}</td>
+              <td>
+                <span class="badge bg-{{ 'success' if client.status == 'مكتمل' else 'warning' if client.status == 'جاري' else 'danger' if client.status == 'مرفوض' else 'secondary' if client.status == 'رفع مرة أخرى' else 'dark' }}">
+                  {{ client.status }}
+                </span>
+              </td>
+              <td>{{ client.created_at.strftime('%Y-%m-%d') if client.created_at else '-' }}</td>
+              <td>
+                <a href="{{ url_for('client_detail', client_id=client.id) }}" class="btn btn-sm btn-primary">
+                  <i class="fas fa-eye"></i> عرض التفاصيل
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center text-muted py-4">
+        <i class="fas fa-info-circle fa-3x text-info mb-3"></i>
+        <div>لا توجد عملاء بحالة "{{ status_filter }}"</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
