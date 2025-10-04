@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+{% block title %}جميع العملاء{% endblock %}
+{% block content %}
+
+<!-- العنوان الرئيسي مع تحسينات بصرية -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex align-items-center">
+    <div class="me-3 pulse-animation">
+      <i class="fas fa-users fa-3x text-primary"></i>
+    </div>
+    <div>
+      <h2 class="mb-0 text-gradient fw-bold">جميع العملاء</h2>
+      <p class="text-muted mb-0 fs-5">
+        <i class="fas fa-info-circle me-2 text-info"></i>
+        عرض وإدارة جميع العملاء في النظام
+      </p>
+    </div>
+  </div>
+  <div class="d-flex align-items-center">
+    <span class="badge bg-primary text-white fs-6 px-4 py-3 me-3 float-animation">
+      <i class="fas fa-users me-2"></i>
+      {{ total_clients }} عميل
+    </span>
+    <a href="{{ url_for('add_contract') }}" class="btn btn-success btn-lg">
+      <i class="fas fa-plus me-2"></i>إضافة عميل جديد
+    </a>
+  </div>
+</div>
+
+<!-- إحصائيات سريعة -->
+<div class="row g-4 mb-4">
+  <div class="col-md-2">
+    <div class="card bg-primary text-white h-100 stats-card pulse-animation">
+      <div class="card-body text-center p-3">
+        <div class="mb-2">
+          <i class="fas fa-users fa-2x opacity-75 float-animation"></i>
+        </div>
+        <h3 class="mb-1 fw-bold">{{ total_clients }}</h3>
+        <div class="small opacity-90">إجمالي العملاء</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-2">
+    <div class="card bg-warning text-white h-100 stats-card pulse-animation">
+      <div class="card-body text-center p-3">
+        <div class="mb-2">
+          <i class="fas fa-clock fa-2x opacity-75 float-animation"></i>
+        </div>
+        <h3 class="mb-1 fw-bold">{{ status_counts['جاري'] }}</h3>
+        <div class="small opacity-90">قيد المعالجة</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-2">
+    <div class="card bg-success text-white h-100 stats-card pulse-animation">
+      <div class="card-body text-center p-3">
+        <div class="mb-2">
+          <i class="fas fa-check-circle fa-2x opacity-75 float-animation"></i>
+        </div>
+        <h3 class="mb-1 fw-bold">{{ status_counts['مكتمل'] }}</h3>
+        <div class="small opacity-90">مكتمل</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-2">
+    <div class="card bg-danger text-white h-100 stats-card pulse-animation">
+      <div class="card-body text-center p-3">
+        <div class="mb-2">
+          <i class="fas fa-times-circle fa-2x opacity-75 float-animation"></i>
+        </div>
+        <h3 class="mb-1 fw-bold">{{ status_counts['مرفوض'] }}</h3>
+        <div class="90">مرفوض</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-2">
+    <div class="card bg-secondary text-white h-100 stats-card pulse-animation">
+      <div class="card-body text-center p-3">
+        <div class="mb-2">
+          <i class="fas fa-redo fa-2x opacity-75 float-animation"></i>
+        </div>
+        <h3 class="mb-1 fw-bold">{{ status_counts['رفع مرة أخرى'] }}</h3>
+        <div class="small opacity-90">رفع مرة أخرى</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-2">
+    <div class="card bg-dark text-white h-100 stats-card pulse-animation">
+      <div class="card-body text-center p-3">
+        <div class="mb-2">
+          <i class="fas fa-ban fa-2x opacity-75 float-animation"></i>
+        </div>
+        <h3 class="mb-1 fw-bold">{{ status_counts['لغا المعاملة'] }}</h3>
+        <div class="small opacity-90">لغا المعاملة</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- أدوات البحث والتصفية -->
+<div class="card shadow-lg border-0 mb-4">
+  <div class="card-header bg-gradient-primary text-white py-3">
+    <div class="d-flex align-items-center">
+      <div class="me-3">
+        <i class="fas fa-search fa-2x text-white pulse-animation"></i>
+      </div>
+      <div>
+        <h5 class="mb-0 fw-bold">البحث والتصفية</h5>
+        <small class="opacity-75">ابحث عن العملاء وصف النتائج حسب الحالة ونوع التأشيرة</small>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card-body">
+    <form method="GET" action="{{ url_for('all_clients') }}" class="row g-3">
+      <div class="col-md-4">
+        <label for="search" class="form-label fw-bold">
+          <i class="fas fa-search me-2 text-primary"></i>البحث
+        </label>
+        <input type="text" 
+               class="form-control" 
+               id="search" 
+               name="search" 
+               value="{{ search_query }}"
+               placeholder="ابحث بالاسم أو رقم الهاتف...">
+      </div>
+      
+      <div class="col-md-3">
+        <label for="status" class="form-label fw-bold">
+          <i class="fas fa-info-circle me-2 text-primary"></i>الحالة
+        </label>
+        <select class="form-select" id="status" name="status">
+          <option value="">جميع الحالات</option>
+          <option value="جاري" {{ 'selected' if status_filter == 'جاري' }}>قيد المعالجة</option>
+          <option value="مكتمل" {{ 'selected' if status_filter == 'مكتمل' }}>مكتمل</option>
+          <option value="مرفوض" {{ 'selected' if status_filter == 'مرفوض' }}>مرفوض</option>
+          <option value="رفع مرة أخرى" {{ 'selected' if status_filter == 'رفع مرة أخرى' }}>رفع مرة أخرى</option>
+          <option value="لغا المعاملة" {{ 'selected' if status_filter == 'لغا المعاملة' }}>لغا المعاملة</option>
+        </select>
+      </div>
+      
+      <div class="col-md-3">
+        <label for="visa_type" class="form-label fw-bold">
+          <i class="fas fa-passport me-2 text-primary"></i>نوع التأشيرة
+        </label>
+        <select class="form-select" id="visa_type" name="visa_type">
+          <option value="">جميع الأنواع</option>
+          {% for visa_type in visa_types %}
+          <option value="{{ visa_type }}" {{ 'selected' if visa_type_filter == visa_type }}>{{ visa_type }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <div class="col-md-2 d-flex align-items-end">
+        <div class="d-grid gap-2 w-100">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-search me-2"></i>بحث
+          </button>
+          <a href="{{ url_for('all_clients') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-times me-2"></i>إعادة تعيين
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- جدول جميع العملاء -->
+<div class="card shadow-lg border-0">
+  <div class="card-header bg-gradient-info text-white py-3">
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <div class="me-3">
+          <i class="fas fa-table fa-2x text-white pulse-animation"></i>
+        </div>
+        <div>
+          <h5 class="mb-0 fw-bold">قائمة جميع العملاء</h5>
+          <small class="opacity-75">
+            {% if search_query or status_filter or visa_type_filter %}
+              تم تطبيق الفلاتر: 
+              {% if search_query %}<span class="badge bg-light text-dark me-1">{{ search_query }}</span>{% endif %}
+              {% if status_filter %}<span class="badge bg-light text-dark me-1">{{ status_filter }}</span>{% endif %}
+              {% if visa_type_filter %}<span class="badge bg-light text-dark me-1">{{ visa_type_filter }}</span>{% endif %}
+            {% else %}
+              عرض جميع العملاء بدون فلترة
+            {% endif %}
+          </small>
+        </div>
+      </div>
+      <span class="badge bg-light text-dark fs-6 px-3 py-2 float-animation">
+        <i class="fas fa-users me-1"></i>
+        {{ total_clients }} عميل
+      </span>
+    </div>
+  </div>
+  
+  <div class="card-body p-0">
+    {% if clients %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 table-enhanced">
+          <thead class="table-light">
+            <tr>
+              <th class="border-0 px-4 py-3 text-success fw-bold">
+                <i class="fas fa-user me-2"></i>اسم العميل
+              </th>
+              <th class="border-0 px-4 py-3 text-info fw-bold">
+                <i class="fas fa-phone me-2"></i>رقم الهاتف
+              </th>
+              <th class="border-0 px-4 py-3 text-warning fw-bold">
+                <i class="fas fa-passport me-2"></i>نوع التأشيرة
+              </th>
+              <th class="border-0 px-4 py-3 text-primary fw-bold">
+                <i class="fas fa-info-circle me-2"></i>الحالة
+              </th>
+              <th class="border-0 px-4 py-3 text-secondary fw-bold">
+                <i class="fas fa-calendar-alt me-2"></i>تاريخ الإضافة
+              </th>
+              <th class="border-0 px-4 py-3 text-dark fw-bold text-center">
+                <i class="fas fa-cogs me-2"></i>الإجراءات
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for client in clients %}
+            <tr class="border-bottom fade-in-up" data-animation-delay="{{ loop.index }}">
+              <td class="px-4 py-3">
+                <div class="d-flex align-items-center">
+                  <div class="avatar-circle me-3 pulse-animation">
+                    <span class="avatar-text">{{ client.name[0] if client.name else '?' }}</span>
+                  </div>
+                  <div>
+                    <div class="fw-bold text-dark">{{ client.name }}</div>
+                    <small class="text-muted">
+                      <i class="fas fa-id-card me-1"></i>
+                      ID: {{ client.id }}
+                    </small>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-phone text-muted me-2"></i>
+                  <span class="fw-semibold">{{ client.phone }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-passport text-muted me-2"></i>
+                  <span class="fw-semibold">{{ client.visa_type }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                {% if client.status == 'مكتمل' %}
+                  <span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill">
+                    <i class="fas fa-check-circle me-1"></i>{{ client.status }}
+                  </span>
+                {% elif client.status == 'جاري' %}
+                  <span class="badge bg-warning-subtle text-warning border border-warning px-3 py-2 rounded-pill">
+                    <i class="fas fa-clock me-1"></i>{{ client.status }}
+                  </span>
+                {% elif client.status == 'مرفوض' %}
+                  <span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2 rounded-pill">
+                    <i class="fas fa-times-circle me-1"></i>{{ client.status }}
+                  </span>
+                {% elif client.status == 'رفع مرة أخرى' %}
+                  <span class="badge bg-secondary-subtle text-secondary border border-secondary px-3 py-2 rounded-pill">
+                    <i class="fas fa-redo me-1"></i>{{ client.status }}
+                  </span>
+                {% elif client.status == 'لغا المعاملة' %}
+                  <span class="badge bg-dark-subtle text-dark border border-dark px-3 py-2 rounded-pill">
+                    <i class="fas fa-ban me-1"></i>{{ client.status }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-info-subtle text-info border border-info px-3 py-2 rounded-pill">
+                    <i class="fas fa-info-circle me-1"></i>{{ client.status }}
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-calendar-alt text-muted me-2"></i>
+                  <span class="fw-semibold">{{ client.created_at.strftime('%Y-%m-%d') if client.created_at else '-' }}</span>
+                </div>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <div class="btn-group" role="group">
+                  <a href="{{ url_for('client_detail', client_id=client.id) }}" 
+                     class="btn btn-primary btn-sm rounded-start" 
+                     title="عرض التفاصيل">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <button type="button" 
+                          class="btn btn-outline-primary btn-sm dropdown-toggle dropdown-toggle-split" 
+                          data-bs-toggle="dropdown" 
+                          aria-expanded="false">
+                    <span class="visually-hidden">Toggle Dropdown</span>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="{{ url_for('client_detail', client_id=client.id) }}">
+                        <i class="fas fa-eye text-primary me-2"></i>عرض التفاصيل
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="{{ url_for('client_detail', client_id=client.id) }}#payments">
+                        <i class="fas fa-credit-card text-success me-2"></i>إدارة الدفعات
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="{{ url_for('client_detail', client_id=client.id) }}#documents">
+                        <i class="fas fa-file-alt text-info me-2"></i>إدارة المستندات
+                      </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <a class="dropdown-item text-warning" href="{{ url_for('client_detail', client_id=client.id) }}#followups">
+                        <i class="fas fa-clock text-warning me-2"></i>إضافة متابعة
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-5">
+        <div class="mb-3">
+          <i class="fas fa-search fa-4x text-muted opacity-50 float-animation"></i>
+        </div>
+        <h5 class="text-muted mb-2">لا توجد نتائج</h5>
+        <p class="text-muted mb-3">
+          <i class="fas fa-info-circle me-2 text-info"></i>
+          {% if search_query or status_filter or visa_type_filter %}
+            لا يوجد عملاء يطابقون معايير البحث المحددة
+          {% else %}
+            لا يوجد عملاء في النظام حالياً
+          {% endif %}
+        </p>
+        {% if search_query or status_filter or visa_type_filter %}
+          <a href="{{ url_for('all_clients') }}" class="btn btn-primary me-2">
+            <i class="fas fa-times me-2"></i>إزالة الفلاتر
+          </a>
+        {% endif %}
+        <a href="{{ url_for('add_contract') }}" class="btn btn-success">
+          <i class="fas fa-plus me-2"></i>إضافة عميل جديد
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- روابط سريعة -->
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center">
+        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+        <h5 class="card-title">العملاء المحتاجون متابعة</h5>
+        <p class="card-text">عرض العملاء الذين يحتاجون متابعة فورية</p>
+        <a href="{{ url_for('clients_needing_attention') }}" class="btn btn-warning">
+          <i class="fas fa-arrow-right me-2"></i>عرض العملاء المحتاجين متابعة
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center">
+        <i class="fas fa-chart-bar fa-3x text-info mb-3"></i>
+        <h5 class="card-title">إحصائيات الحالات</h5>
+        <p class="card-text">عرض إحصائيات مفصلة لحالات العملاء</p>
+        <a href="{{ url_for('manage_status') }}" class="btn btn-info">
+          <i class="fas fa-arrow-right me-2"></i>عرض الإحصائيات
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

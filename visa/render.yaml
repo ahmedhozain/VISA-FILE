@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: visa-app
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 2 -b 0.0.0.0:10000 app:app
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: UPLOAD_FOLDER
+        value: /var/uploads
+    autoDeploy: true
+    healthCheckPath: /
+    # Optional persistent disk for uploads
+    disks:
+      - name: uploads
+        mountPath: /var/uploads
+        sizeGB: 1
