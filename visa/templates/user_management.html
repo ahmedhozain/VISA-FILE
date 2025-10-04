@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block title %}إدارة المستخدمين{% endblock %}
+{% block content %}
+
+<!-- شريط المستخدم -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <div class="user-avatar me-3">
+              <i class="fas fa-user-circle fa-2x text-primary"></i>
+            </div>
+            <div>
+              <h6 class="mb-0 text-primary">{{ session.employee_name or 'مستخدم' }}</h6>
+              <small class="text-muted">{{ session.username or 'username' }}</small>
+            </div>
+          </div>
+          <div class="d-flex align-items-center">
+            <span class="badge bg-success me-3">
+              <i class="fas fa-check-circle me-1"></i>نشط
+            </span>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">
+              <i class="fas fa-sign-out-alt me-1"></i>تسجيل الخروج
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- العنوان الرئيسي -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="text-gradient mb-2">
+      <i class="fas fa-users-cog me-3"></i>إدارة المستخدمين
+    </h1>
+    <p class="text-muted fs-5">إدارة وإضافة المستخدمين الجدد</p>
+  </div>
+  <div>
+    <a href="{{ url_for('disappointed_clients') }}" class="btn btn-outline-primary btn-lg">
+      <i class="fas fa-arrow-right me-2"></i>العودة للأقسام
+    </a>
+  </div>
+</div>
+
+<!-- إضافة مستخدم جديد -->
+<div class="card shadow-lg mb-4">
+  <div class="card-header bg-gradient-success text-white">
+    <h4 class="mb-0">
+      <i class="fas fa-user-plus me-2"></i>إضافة مستخدم جديد
+    </h4>
+  </div>
+  <div class="card-body p-4">
+    <form method="POST" action="{{ url_for('add_user') }}">
+      <div class="row g-4">
+        <!-- اسم الموظف -->
+        <div class="col-md-6">
+          <label for="employee_name" class="form-label fw-bold fs-5">
+            <i class="fas fa-id-card me-2 text-info"></i>اسم الموظف
+          </label>
+          <input type="text" class="form-control form-control-lg" id="employee_name" name="employee_name" 
+                 placeholder="أدخل اسم الموظف الكامل" required>
+        </div>
+
+        <!-- اسم المستخدم -->
+        <div class="col-md-6">
+          <label for="username" class="form-label fw-bold fs-5">
+            <i class="fas fa-user me-2 text-primary"></i>اسم المستخدم
+          </label>
+          <input type="text" class="form-control form-control-lg" id="username" name="username" 
+                 placeholder="أدخل اسم المستخدم" required>
+        </div>
+
+        <!-- كلمة المرور -->
+        <div class="col-md-6">
+          <label for="password" class="form-label fw-bold fs-5">
+            <i class="fas fa-key me-2 text-success"></i>كلمة المرور
+          </label>
+          <input type="password" class="form-control form-control-lg" id="password" name="password" 
+                 placeholder="أدخل كلمة المرور" required>
+        </div>
+
+        <!-- نوع المستخدم -->
+        <div class="col-md-6">
+          <label for="role" class="form-label fw-bold fs-5">
+            <i class="fas fa-user-tag me-2 text-warning"></i>نوع المستخدم
+          </label>
+          <select class="form-select form-select-lg" id="role" name="role" required>
+            <option value="user">مستخدم عادي</option>
+            <option value="admin">مدير</option>
+          </select>
+        </div>
+
+        <!-- حالة المستخدم -->
+        <div class="col-md-6">
+          <label for="is_active" class="form-label fw-bold fs-5">
+            <i class="fas fa-toggle-on me-2 text-info"></i>حالة المستخدم
+          </label>
+          <select class="form-select form-select-lg" id="is_active" name="is_active" required>
+            <option value="true">نشط</option>
+            <option value="false">غير نشط</option>
+          </select>
+        </div>
+
+        <!-- أزرار التحكم -->
+        <div class="col-12 text-center mt-4">
+          <button type="submit" class="btn btn-success btn-lg px-5 me-3">
+            <i class="fas fa-save me-2"></i>إضافة المستخدم
+          </button>
+          <button type="reset" class="btn btn-outline-secondary btn-lg px-5">
+            <i class="fas fa-undo me-2"></i>مسح النموذج
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- قائمة المستخدمين -->
+<div class="card shadow-lg">
+  <div class="card-header bg-gradient-info text-white">
+    <h4 class="mb-0">
+      <i class="fas fa-list me-2"></i>قائمة المستخدمين
+    </h4>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th class="text-center" style="width: 60px;">#</th>
+            <th style="width: 200px;">اسم الموظف</th>
+            <th style="width: 150px;">اسم المستخدم</th>
+            <th style="width: 120px;">نوع المستخدم</th>
+            <th style="width: 100px;">الحالة</th>
+            <th style="width: 150px;">تاريخ الإنشاء</th>
+            <th style="width: 200px;">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td class="text-center">
+              <span class="badge bg-secondary rounded-pill fs-6">{{ user.id }}</span>
+            </td>
+            <td>
+              <div class="d-flex align-items-center">
+                <i class="fas fa-id-card me-2 text-info"></i>
+                <span class="fw-bold">{{ user.employee_name }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="d-flex align-items-center">
+                <i class="fas fa-user me-2 text-primary"></i>
+                <span class="fw-bold">{{ user.username }}</span>
+              </div>
+            </td>
+            <td>
+              {% if user.role == 'admin' %}
+                <span class="badge bg-danger fs-6 px-3 py-2">
+                  <i class="fas fa-crown me-1"></i>مدير
+                </span>
+              {% else %}
+                <span class="badge bg-primary fs-6 px-3 py-2">
+                  <i class="fas fa-user me-1"></i>مستخدم
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              {% if user.is_active %}
+                <span class="badge bg-success fs-6 px-3 py-2">
+                  <i class="fas fa-check-circle me-1"></i>نشط
+                </span>
+              {% else %}
+                <span class="badge bg-secondary fs-6 px-3 py-2">
+                  <i class="fas fa-times-circle me-1"></i>غير نشط
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="text-muted">{{ user.created_at.strftime('%Y-%m-%d') }}</span>
+            </td>
+            <td>
+              <div class="d-flex gap-2">
+                <form method="post" action="{{ url_for('toggle_user_status', user_id=user.id) }}" class="d-inline">
+                  <button class="btn btn-sm btn-{{ 'warning' if user.is_active else 'success' }}" 
+                          title="{{ 'إلغاء تفعيل' if user.is_active else 'تفعيل' }}">
+                    <i class="fas fa-{{ 'toggle-off' if user.is_active else 'toggle-on' }}"></i>
+                  </button>
+                </form>
+                {% if user.role != 'admin' %}
+                <form method="post" action="{{ url_for('delete_user', user_id=user.id) }}" 
+                      onsubmit="return confirm('هل أنت متأكد من حذف هذا المستخدم؟')" class="d-inline">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="حذف المستخدم">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-center py-5">
+              <div class="text-muted">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p class="fs-5">لا توجد مستخدمين بعد</p>
+                <p class="text-muted">ابدأ بإضافة أول مستخدم</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+.text-gradient {
+  background: linear-gradient(45deg, #28a745, #20c997);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bg-gradient-success {
+  background: linear-gradient(45deg, #28a745, #20c997) !important;
+}
+
+.bg-gradient-info {
+  background: linear-gradient(45deg, #17a2b8, #138496) !important;
+}
+
+.form-control-lg {
+  font-size: 1.1rem;
+  padding: 0.75rem 1rem;
+}
+
+.form-label {
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+}
+
+.card-header {
+  border-radius: 15px 15px 0 0 !important;
+  border: none;
+}
+
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: #495057;
+  background-color: #f8f9fa;
+}
+
+.btn-lg {
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  border-radius: 10px;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.btn-success {
+  background: linear-gradient(45deg, #28a745, #20c997);
+  border: none;
+  color: white;
+  font-weight: 600;
+}
+
+.btn-success:hover {
+  background: linear-gradient(45deg, #20c997, #17a2b8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+/* شريط المستخدم */
+.user-avatar {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(45deg, #007bff, #0056b3);
+  border-radius: 50%;
+  color: white;
+}
+
+.user-avatar i {
+  font-size: 1.5rem;
+}
+</style>
+
+{% endblock %}
