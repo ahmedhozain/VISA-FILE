@@ -1,0 +1,603 @@
+{% extends "base.html" %}
+{% block title %}تفاصيل العميل المكتمل{% endblock %}
+{% block content %}
+
+<!-- شريط المستخدم -->
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-2">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-user-circle fa-2x text-primary me-3"></i>
+            <div>
+              <h6 class="mb-0 text-primary">{{ session.employee_name or 'مستخدم' }}</h6>
+              <small class="text-muted">{{ session.username or 'username' }}</small>
+            </div>
+          </div>
+          <div>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">
+              <i class="fas fa-sign-out-alt me-1"></i>تسجيل الخروج
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+      
+      <!-- معلومات العميل المكتمل -->
+      <div class="card shadow-lg border-0 mt-3 mb-4">
+        <div class="card-header bg-success text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-check-circle me-2"></i>ملخص العميل المكتمل
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">اسم العميل:</label>
+                <p class="mb-0 text-primary fw-bold">{{ client.client_name or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">رقم الهاتف:</label>
+                <p class="mb-0 text-primary fw-bold">{{ client.client_phone or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">نوع الإنجاز:</label>
+                <p class="mb-0">
+                  <span class="badge bg-{{ 'primary' if client.completion_type == 'إدارة ملفات' else 'warning' if client.completion_type == 'متابعة عميل مستاء' else 'danger' }} fs-6">
+                    {{ client.completion_type }}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ الإنجاز:</label>
+                <p class="mb-0 text-success fw-bold">{{ client.completion_date.strftime('%Y-%m-%d') if client.completion_date else 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">أضافها:</label>
+                <p class="mb-0">
+                  <span class="badge bg-success fs-6">
+                    {{ client.created_by or 'غير محدد' }}
+                  </span>
+                </p>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تفاصيل الإنجاز:</label>
+                <p class="mb-0 bg-light p-3 rounded">{{ client.completion_details or 'لا توجد تفاصيل' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- بيانات إدارة الملفات -->
+      {% if original_data and original_data.file_management_data %}
+      <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-folder-open me-2"></i>بيانات إدارة الملفات الأصلية
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ العقد:</label>
+                <p class="mb-0">{{ original_data.file_management_data.contract_date or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">المبلغ المدفوع:</label>
+                <p class="mb-0">{{ original_data.file_management_data.paid_amount or 'غير محدد' }} ج.م</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ البصمة:</label>
+                <p class="mb-0">{{ original_data.file_management_data.fingerprint_date or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ الرفض:</label>
+                <p class="mb-0">{{ original_data.file_management_data.rejection_date or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">الحالة الأصلية:</label>
+                <p class="mb-0">{{ original_data.file_management_data.status or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="info-item">
+                <label class="fw-bold text-muted">شكوى العميل الأصلية:</label>
+                <p class="mb-0">{{ original_data.file_management_data.client_complaint or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">أضاف ملف العميل:</label>
+                <p class="mb-0">
+                  <span class="badge bg-info">{{ original_data.file_management_data.created_by or 'غير محدد' }}</span>
+                </p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ إضافة الملف:</label>
+                <p class="mb-0">{{ original_data.file_management_data.created_at or 'غير محدد' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- بيانات متابعة العميل المستاء -->
+      {% if original_data and original_data.followup_data %}
+      <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h4 class="mb-0">
+            <i class="fas fa-user-times me-2"></i>بيانات متابعة العميل المستاء
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ استلام النموذج:</label>
+                <p class="mb-0">{{ original_data.followup_data.form_received_date or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ مكالمة العميل:</label>
+                <p class="mb-0">{{ original_data.followup_data.client_call_date or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تفاصيل المكالمة:</label>
+                <p class="mb-0">{{ original_data.followup_data.call_details or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="info-item">
+                <label class="fw-bold text-muted">شكوى العميل في المتابعة:</label>
+                <p class="mb-0">{{ original_data.followup_data.client_complaint or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="info-item">
+                <label class="fw-bold text-muted">الاتفاق الجديد:</label>
+                <p class="mb-0">{{ original_data.followup_data.new_agreement or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">حالة المتابعة:</label>
+                <p class="mb-0">{{ original_data.followup_data.status or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">أضاف المتابعة:</label>
+                <p class="mb-0">
+                  <span class="badge bg-secondary">{{ original_data.followup_data.created_by or 'غير محدد' }}</span>
+                </p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ إضافة المتابعة:</label>
+                <p class="mb-0">{{ original_data.followup_data.created_at or 'غير محدد' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- عرض البيانات القديمة إذا لم تكن مرتبطة -->
+      {% if client.completion_type == 'إدارة ملفات' and original_data and not original_data.file_management_data and not original_data.followup_data %}
+      <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-secondary text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-file-alt me-2"></i>بيانات إدارة الملفات (قديمة)
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% if original_data.contract_date %}
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ العقد:</label>
+                <p class="mb-0">{{ original_data.contract_date }}</p>
+              </div>
+            </div>
+            {% endif %}
+            {% if original_data.paid_amount %}
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">المبلغ المدفوع:</label>
+                <p class="mb-0">{{ original_data.paid_amount }} ج.م</p>
+              </div>
+            </div>
+            {% endif %}
+            {% if original_data.fingerprint_date %}
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ البصمة:</label>
+                <p class="mb-0">{{ original_data.fingerprint_date }}</p>
+              </div>
+            </div>
+            {% endif %}
+            {% if original_data.rejection_date %}
+            <div class="col-md-4">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ الرفض:</label>
+                <p class="mb-0">{{ original_data.rejection_date }}</p>
+              </div>
+            </div>
+            {% endif %}
+            {% if original_data.client_complaint %}
+            <div class="col-12">
+              <div class="info-item">
+                <label class="fw-bold text-muted">شكوى العميل:</label>
+                <p class="mb-0">{{ original_data.client_complaint }}</p>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% elif client.completion_type == 'شؤون قانونية' and original_data %}
+      <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-danger text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-gavel me-2"></i>بيانات الشؤون القانونية
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% if original_data.legal_data %}
+              {% if original_data.legal_data.form_received_date %}
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">تاريخ استلام النموذج:</label>
+                  <p class="mb-0">{{ original_data.legal_data.form_received_date }}</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if original_data.legal_data.call_date %}
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">تاريخ المكالمة:</label>
+                  <p class="mb-0">{{ original_data.legal_data.call_date }}</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if original_data.legal_data.call_details %}
+              <div class="col-12">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">تفاصيل المكالمة:</label>
+                  <p class="mb-0 bg-light p-3 rounded border-start border-4 border-info">{{ original_data.legal_data.call_details }}</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if original_data.legal_data.last_agreement %}
+              <div class="col-12">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">آخر اتفاق:</label>
+                  <p class="mb-0 bg-light p-3 rounded border-start border-4 border-warning">{{ original_data.legal_data.last_agreement }}</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if original_data.legal_data.case_type %}
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">نوع القضية:</label>
+                  <p class="mb-0">{{ original_data.legal_data.case_type }}</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if original_data.legal_data.status %}
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">حالة القضية:</label>
+                  <p class="mb-0">{{ original_data.legal_data.status }}</p>
+                </div>
+              </div>
+              {% endif %}
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">أضاف القضية القانونية:</label>
+                  <p class="mb-0">
+                    <span class="badge bg-danger">{{ original_data.legal_data.created_by or 'غير محدد' }}</span>
+                  </p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">تاريخ إضافة القضية:</label>
+                  <p class="mb-0">{{ original_data.legal_data.created_at or 'غير محدد' }}</p>
+                </div>
+              </div>
+            {% else %}
+              <!-- للبيانات القديمة -->
+              {% if original_data.form_received_date %}
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">تاريخ استلام النموذج:</label>
+                  <p class="mb-0">{{ original_data.form_received_date }}</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if original_data.call_date %}
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">تاريخ المكالمة:</label>
+                  <p class="mb-0">{{ original_data.call_date }}</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if original_data.call_details %}
+              <div class="col-12">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">تفاصيل المكالمة:</label>
+                  <p class="mb-0 bg-light p-3 rounded border-start border-4 border-info">{{ original_data.call_details }}</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if original_data.last_agreement %}
+              <div class="col-12">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">آخر اتفاق:</label>
+                  <p class="mb-0 bg-light p-3 rounded border-start border-4 border-warning">{{ original_data.last_agreement }}</p>
+                </div>
+              </div>
+              {% endif %}
+              {% if original_data.case_type %}
+              <div class="col-md-6">
+                <div class="info-item">
+                  <label class="fw-bold text-muted">نوع القضية:</label>
+                  <p class="mb-0">{{ original_data.case_type }}</p>
+                </div>
+              </div>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- عرض البيانات القديمة إذا لم تكن منظمة -->
+      {% if not original_data.file_management_data and not original_data.followup_data and not original_data.legal_data %}
+      {% if client.completion_type == 'إدارة ملفات' %}
+      <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-folder-open me-2"></i>بيانات إدارة الملفات
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">اسم العميل:</label>
+                <p class="mb-0 text-primary fw-bold">{{ client.client_name or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">رقم الهاتف:</label>
+                <p class="mb-0 text-primary fw-bold">{{ client.client_phone or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تفاصيل الإنجاز:</label>
+                <p class="mb-0 bg-light p-3 rounded border-start border-4 border-primary">{{ client.completion_details or 'لا توجد تفاصيل' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ الإنجاز:</label>
+                <p class="mb-0">{{ client.completion_date.strftime('%Y-%m-%d') if client.completion_date else 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">أنهى الملف:</label>
+                <p class="mb-0">
+                  <span class="badge bg-success">{{ client.created_by or 'غير محدد' }}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% elif client.completion_type == 'متابعة عميل مستاء' %}
+      <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h4 class="mb-0">
+            <i class="fas fa-user-times me-2"></i>بيانات متابعة العميل المستاء
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">اسم العميل:</label>
+                <p class="mb-0 text-primary fw-bold">{{ client.client_name or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">رقم الهاتف:</label>
+                <p class="mb-0 text-primary fw-bold">{{ client.client_phone or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تفاصيل الإنجاز:</label>
+                <p class="mb-0 bg-light p-3 rounded border-start border-4 border-warning">{{ client.completion_details or 'لا توجد تفاصيل' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ الإنجاز:</label>
+                <p class="mb-0">{{ client.completion_date.strftime('%Y-%m-%d') if client.completion_date else 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">أنهى المتابعة:</label>
+                <p class="mb-0">
+                  <span class="badge bg-warning">{{ client.created_by or 'غير محدد' }}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% elif client.completion_type == 'شؤون قانونية' %}
+      <div class="card shadow-lg border-0 mb-4">
+        <div class="card-header bg-danger text-white">
+          <h4 class="mb-0">
+            <i class="fas fa-gavel me-2"></i>بيانات الشؤون القانونية
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">اسم العميل:</label>
+                <p class="mb-0 text-primary fw-bold">{{ client.client_name or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">رقم الهاتف:</label>
+                <p class="mb-0 text-primary fw-bold">{{ client.client_phone or 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تفاصيل الإنجاز:</label>
+                <p class="mb-0 bg-light p-3 rounded border-start border-4 border-danger">{{ client.completion_details or 'لا توجد تفاصيل' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">تاريخ الإنجاز:</label>
+                <p class="mb-0">{{ client.completion_date.strftime('%Y-%m-%d') if client.completion_date else 'غير محدد' }}</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="info-item">
+                <label class="fw-bold text-muted">أنهى القضية:</label>
+                <p class="mb-0">
+                  <span class="badge bg-danger">{{ client.created_by or 'غير محدد' }}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+
+      <!-- أزرار الإجراءات -->
+      <div class="text-center">
+        <a href="{{ url_for('disappointed_clients') }}" class="btn btn-primary btn-lg">
+          <i class="fas fa-arrow-right me-2"></i>رجوع للعملاء المستاءين
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.info-item {
+  margin-bottom: 0.5rem;
+}
+
+.info-item label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.info-item p {
+  font-size: 1rem;
+  color: #333;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #28a745;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* ألوان مختلفة لكل قسم */
+.bg-primary .info-item p {
+  border-left-color: #007bff;
+}
+
+.bg-warning .info-item p {
+  border-left-color: #ffc107;
+}
+
+.bg-success .info-item p {
+  border-left-color: #28a745;
+}
+
+.bg-info .info-item p {
+  border-left-color: #17a2b8;
+}
+
+.bg-secondary .info-item p {
+  border-left-color: #6c757d;
+}
+
+.bg-danger .info-item p {
+  border-left-color: #dc3545;
+}
+
+.card {
+  border-radius: 15px;
+}
+
+.card-header {
+  border-radius: 15px 15px 0 0 !important;
+  border: none;
+}
+
+.btn-lg {
+  padding: 0.75rem 2rem;
+  border-radius: 10px;
+}
+</style>
+
+{% endblock %}
