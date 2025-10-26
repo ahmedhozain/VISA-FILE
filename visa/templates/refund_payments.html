@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}دفعات الاسترداد{% endblock %}
+{% block content %}
+
+<!-- شريط المستخدم -->
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body py-2">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+            <i class="fas fa-user-circle fa-2x text-success me-3"></i>
+            <div>
+              <h6 class="mb-0 text-success">{{ session.employee_name or 'مستخدم' }}</h6>
+              <small class="text-muted">{{ session.username or 'username' }}</small>
+            </div>
+          </div>
+          <div>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">
+              <i class="fas fa-sign-out-alt me-1"></i>تسجيل الخروج
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-10">
+
+      <div class="card shadow-lg border-0">
+        <div class="card-header bg-success text-white text-center">
+          <h4 class="mb-0">
+            <i class="fas fa-money-bill-wave me-2"></i>دفعات الاسترداد
+          </h4>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" action="{{ url_for('add_refund_payment') }}">
+            <div class="row g-3">
+              
+              <!-- اختيار العميل من القائمة (اختياري) -->
+              <div class="col-md-6">
+                <div class="form-floating">
+                  <select class="form-select" id="client_id" name="client_id" onchange="fillClientData()">
+                    <option value="">-- اختر عميل من القائمة (اختياري) --</option>
+                    {% for client in fully_completed_clients %}
+                    <option value="{{ client.id }}" 
+                            data-name="{{ client.client_name }}" 
+                            data-phone="{{ client.client_phone }}">
+                      {{ client.client_name }} - {{ client.client_phone }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                  <label for="client_id">اختيار عميل مكتمل من القائمة</label>
+                </div>
+              </div>
+
+              <!-- اسم العميل -->
+              <div class="col-md-6">
+                <div class="form-floating">
+                  <input type="text" class="form-control" id="client_name" name="client_name" required>
+                  <label for="client_name">اسم العميل *</label>
+                </div>
+              </div>
+
+              <!-- رقم الهاتف -->
+              <div class="col-md-6">
+                <div class="form-floating">
+                  <input type="text" class="form-control" id="client_phone" name="client_phone">
+                  <label for="client_phone">رقم الهاتف</label>
+                </div>
+              </div>
+
+              <!-- المبلغ -->
+              <div class="col-md-6">
+                <div class="form-floating">
+                  <input type="number" step="0.01" class="form-control" id="amount" name="amount" required>
+                  <label for="amount">المبلغ *</label>
+                </div>
+              </div>
+
+              <!-- تاريخ الدفع -->
+              <div class="col-md-6">
+                <div class="form-floating">
+                  <input type="date" class="form-control" id="payment_date" name="payment_date" required>
+                  <label for="payment_date">تاريخ الدفع *</label>
+                </div>
+              </div>
+
+              <!-- طريقة الدفع -->
+              <div class="col-md-6">
+                <div class="form-floating">
+                  <select class="form-select" id="payment_method" name="payment_method">
+                    <option value="نقدي">نقدي</option>
+                    <option value="تحويل بنكي">تحويل بنكي</option>
+                    <option value="شيك">شيك</option>
+                    <option value="فيزا">فيزا</option>
+                    <option value="المحفظة الإلكترونية">المحفظة الإلكترونية</option>
+                  </select>
+                  <label for="payment_method">طريقة الدفع</label>
+                </div>
+              </div>
+
+              <!-- ملاحظات -->
+              <div class="col-12">
+                <div class="form-floating">
+                  <textarea class="form-control" id="notes" name="notes" style="height: 100px"></textarea>
+                  <label for="notes">ملاحظات</label>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="row mt-4">
+              <div class="col-12 text-center">
+                <button type="submit" class="btn btn-success btn-lg me-3">
+                  <i class="fas fa-save me-2"></i>حفظ الدفعة
+                </button>
+                <a href="{{ url_for('disappointed_clients') }}" class="btn btn-outline-secondary btn-lg">
+                  <i class="fas fa-arrow-right me-2"></i>رجوع
+                </a>
+              </div>
+            </div>
+          </form>
+          
+          <!-- جدول عرض دفعات الاسترداد الحالية -->
+          <div class="mt-5">
+            <h5 class="mb-3">
+              <i class="fas fa-list me-2"></i>دفعات الاسترداد المسجلة
+            </h5>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>اسم العميل</th>
+                    <th>رقم الهاتف</th>
+                    <th>المبلغ</th>
+                    <th>تاريخ الدفع</th>
+                    <th>طريقة الدفع</th>
+                    <th>الحالة</th>
+                    <th>ملاحظات</th>
+                    <th>أضافها</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if current_payments %}
+                    {% for payment in current_payments %}
+                    <tr>
+                      <td>{{ loop.index }}</td>
+                      <td>
+                        <strong class="text-success">{{ payment.client_name }}</strong>
+                      </td>
+                      <td>{{ payment.client_phone or 'غير محدد' }}</td>
+                      <td>
+                        <span class="badge bg-success">{{ payment.amount }} ج.م</span>
+                      </td>
+                      <td>{{ payment.payment_date.strftime('%Y-%m-%d') if payment.payment_date else 'غير محدد' }}</td>
+                      <td>{{ payment.payment_method }}</td>
+                      <td>
+                        <span class="badge bg-{{ 'success' if payment.status == 'مكتمل' else 'warning' if payment.status == 'معلق' else 'danger' }}">
+                          {{ payment.status }}
+                        </span>
+                      </td>
+                      <td>{{ payment.notes or '-' }}</td>
+                      <td>
+                        <span class="badge bg-info">
+                          {{ payment.created_by or 'غير محدد' }}
+                        </span>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  {% else %}
+                    <tr>
+                      <td colspan="9" class="text-center py-3 text-muted">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <br>لا توجد دفعات مسجلة بعد
+                      </td>
+                    </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+.info-item {
+  padding: 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item label {
+  font-size: 0.9rem;
+}
+
+.card {
+  border-radius: 10px;
+}
+
+.card-header {
+  border-radius: 10px 10px 0 0 !important;
+}
+
+.table th {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.table td {
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+</style>
+
+<script>
+// تعبئة بيانات العميل عند الاختيار من القائمة
+function fillClientData() {
+  const select = document.getElementById('client_id');
+  const selectedOption = select.options[select.selectedIndex];
+  
+  if (selectedOption.value) {
+    document.getElementById('client_name').value = selectedOption.dataset.name || '';
+    document.getElementById('client_phone').value = selectedOption.dataset.phone || '';
+  } else {
+    document.getElementById('client_name').value = '';
+    document.getElementById('client_phone').value = '';
+  }
+}
+
+// تعيين التاريخ الحالي
+document.addEventListener('DOMContentLoaded', function() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('payment_date').value = today;
+});
+</script>
+
+{% endblock %}
+
